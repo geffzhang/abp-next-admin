@@ -1,19 +1,22 @@
-﻿using LINGYUN.Abp.AspNetCore.HttpOverrides;
+﻿using DotNetCore.CAP;
+using LINGYUN.Abp.AspNetCore.HttpOverrides;
 using LINGYUN.Abp.Auditing;
 using LINGYUN.Abp.AuditLogging.Elasticsearch;
 using LINGYUN.Abp.Data.DbMigrator;
 using LINGYUN.Abp.EventBus.CAP;
 using LINGYUN.Abp.ExceptionHandling.Emailing;
 using LINGYUN.Abp.FeatureManagement;
+using LINGYUN.Abp.Identity.EntityFrameworkCore;
 using LINGYUN.Abp.Localization.CultureMap;
 using LINGYUN.Abp.LocalizationManagement.EntityFrameworkCore;
 using LINGYUN.Abp.Logging.Serilog.Elasticsearch;
-using LINGYUN.Abp.MultiTenancy.DbFinder;
-using LINGYUN.Abp.PermissionManagement.Identity;
+using LINGYUN.Abp.PermissionManagement.OrganizationUnits;
+using LINGYUN.Abp.Saas;
+using LINGYUN.Abp.Saas.EntityFrameworkCore;
 using LINGYUN.Abp.Serilog.Enrichers.Application;
+using LINGYUN.Abp.Serilog.Enrichers.UniqueId;
 using LINGYUN.Abp.SettingManagement;
 using LINGYUN.Abp.Sms.Aliyun;
-using LINGYUN.Abp.TenantManagement;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,56 +30,56 @@ using Volo.Abp.Caching.StackExchangeRedis;
 using Volo.Abp.EntityFrameworkCore.MySQL;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.FeatureManagement.EntityFrameworkCore;
-using Volo.Abp.Identity.EntityFrameworkCore;
 using Volo.Abp.IdentityServer.EntityFrameworkCore;
 using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement;
 using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.PermissionManagement.HttpApi;
+using Volo.Abp.PermissionManagement.Identity;
 using Volo.Abp.PermissionManagement.IdentityServer;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
-using Volo.Abp.TenantManagement.EntityFrameworkCore;
 
 namespace LY.MicroService.BackendAdmin;
 
 [DependsOn(
-        typeof(AbpSerilogEnrichersApplicationModule),
-        typeof(AbpAspNetCoreSerilogModule),
-        typeof(AbpLoggingSerilogElasticsearchModule),
-        typeof(AbpAuditLoggingElasticsearchModule),
-        typeof(AbpAspNetCoreMvcUiMultiTenancyModule),
-        typeof(AbpSettingManagementApplicationModule),
-        typeof(AbpSettingManagementHttpApiModule),
-        typeof(AbpPermissionManagementApplicationModule),
-        typeof(AbpPermissionManagementHttpApiModule),
-        typeof(AbpFeatureManagementApplicationModule),
-        typeof(AbpFeatureManagementHttpApiModule),
-        typeof(AbpFeatureManagementClientModule),
-        typeof(AbpAuditingApplicationModule),
-        typeof(AbpAuditingHttpApiModule),
-        typeof(AbpTenantManagementApplicationModule),
-        typeof(AbpTenantManagementHttpApiModule),
-        typeof(AbpEntityFrameworkCoreMySQLModule),
-        typeof(AbpIdentityEntityFrameworkCoreModule),// 用户角色权限需要引用包
-        typeof(AbpIdentityServerEntityFrameworkCoreModule), // 客户端权限需要引用包
-        typeof(AbpTenantManagementEntityFrameworkCoreModule),
-        typeof(AbpSettingManagementEntityFrameworkCoreModule),
-        typeof(AbpPermissionManagementDomainIdentityModule),
-        typeof(AbpPermissionManagementDomainIdentityServerModule),
-        typeof(AbpPermissionManagementEntityFrameworkCoreModule),
-        typeof(AbpFeatureManagementEntityFrameworkCoreModule),
-        typeof(AbpLocalizationManagementEntityFrameworkCoreModule),
-        typeof(AbpDataDbMigratorModule),
-        typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
-        typeof(AbpEmailingExceptionHandlingModule),
-        typeof(AbpCAPEventBusModule),
-        typeof(AbpAliyunSmsModule),
-        typeof(AbpDbFinderMultiTenancyModule),
-        typeof(AbpCachingStackExchangeRedisModule),
-        typeof(AbpAspNetCoreHttpOverridesModule),
-        typeof(AbpLocalizationCultureMapModule),
-        typeof(AbpAutofacModule)
-        )]
+    typeof(AbpSerilogEnrichersApplicationModule),
+    typeof(AbpSerilogEnrichersUniqueIdModule),
+    typeof(AbpAspNetCoreSerilogModule),
+    typeof(AbpLoggingSerilogElasticsearchModule),
+    typeof(AbpAuditLoggingElasticsearchModule),
+    typeof(AbpAspNetCoreMvcUiMultiTenancyModule),
+    typeof(AbpSettingManagementApplicationModule),
+    typeof(AbpSettingManagementHttpApiModule),
+    typeof(AbpPermissionManagementApplicationModule),
+    typeof(AbpPermissionManagementHttpApiModule),
+    typeof(AbpFeatureManagementApplicationModule),
+    typeof(AbpFeatureManagementHttpApiModule),
+    typeof(AbpFeatureManagementClientModule),
+    typeof(AbpAuditingApplicationModule),
+    typeof(AbpAuditingHttpApiModule),
+    typeof(AbpSaasApplicationModule),
+    typeof(AbpSaasHttpApiModule),
+    typeof(AbpEntityFrameworkCoreMySQLModule),
+    typeof(AbpIdentityEntityFrameworkCoreModule),// 用户角色权限需要引用包
+    typeof(AbpIdentityServerEntityFrameworkCoreModule), // 客户端权限需要引用包
+    typeof(AbpPermissionManagementDomainOrganizationUnitsModule), // 组织机构权限管理
+    typeof(AbpSaasEntityFrameworkCoreModule),
+    typeof(AbpSettingManagementEntityFrameworkCoreModule),
+    typeof(AbpPermissionManagementDomainIdentityModule),
+    typeof(AbpPermissionManagementDomainIdentityServerModule),
+    typeof(AbpPermissionManagementEntityFrameworkCoreModule),
+    typeof(AbpFeatureManagementEntityFrameworkCoreModule),
+    typeof(AbpLocalizationManagementEntityFrameworkCoreModule),
+    typeof(AbpDataDbMigratorModule),
+    typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
+    typeof(AbpEmailingExceptionHandlingModule),
+    typeof(AbpCAPEventBusModule),
+    typeof(AbpAliyunSmsModule),
+    typeof(AbpCachingStackExchangeRedisModule),
+    typeof(AbpAspNetCoreHttpOverridesModule),
+    typeof(AbpLocalizationCultureMapModule),
+    typeof(AbpAutofacModule)
+    )]
 public partial class BackendAdminHttpApiHostModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
@@ -84,46 +87,54 @@ public partial class BackendAdminHttpApiHostModule : AbpModule
         var configuration = context.Services.GetConfiguration();
 
         PreConfigureApp();
+        PreConfigureFeature();
         PreConfigureCAP(configuration);
     }
 
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var hostingEnvironment = context.Services.GetHostingEnvironment();
-        var configuration = hostingEnvironment.BuildConfiguration();
+        var configuration = context.Services.GetConfiguration();
 
         ConfigureDbContext();
+        ConfigureLocalization();
         ConfigureJsonSerializer();
-        ConfigurePermissionManagement();
         ConfigureExceptionHandling();
-        ConfigureCaching(configuration);
         ConfigureVirtualFileSystem();
-        ConfigureMultiTenancy(configuration);
+        ConfigureFeatureManagement();
+        ConfigurePermissionManagement();
+        ConfigureCaching(configuration);
         ConfigureAuditing(configuration);
         ConfigureSwagger(context.Services);
-        ConfigureLocalization();
+        ConfigureMultiTenancy(configuration);
+        ConfigureCors(context.Services, configuration);
+        ConfigureSeedWorker(context.Services, hostingEnvironment.IsDevelopment());
         ConfigureSecurity(context.Services, configuration, hostingEnvironment.IsDevelopment());
     }
 
     public override void OnApplicationInitialization(ApplicationInitializationContext context)
     {
         var app = context.GetApplicationBuilder();
+        // 本地化
+        app.UseMapRequestLocalization();
         // http调用链
         app.UseCorrelationId();
         // 虚拟文件系统
         app.UseStaticFiles();
-        //路由
+        // 路由
         app.UseRouting();
+        // 跨域
+        app.UseCors(DefaultCorsPolicyName);
         // 认证
         app.UseAuthentication();
         // jwt
         app.UseJwtTokenMiddleware();
         // 多租户
         app.UseMultiTenancy();
-        // 本地化
-        app.UseMapRequestLocalization();
         // 授权
         app.UseAuthorization();
+        // Cap Dashboard
+        app.UseCapDashboard();
         // Swagger
         app.UseSwagger();
         // Swagger可视化界面
@@ -136,7 +147,5 @@ public partial class BackendAdminHttpApiHostModule : AbpModule
         app.UseAbpSerilogEnrichers();
         // 路由
         app.UseConfiguredEndpoints();
-
-        SeedData(context);
     }
 }

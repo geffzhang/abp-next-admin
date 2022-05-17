@@ -2,10 +2,11 @@
   <BasicModal
     v-bind="$attrs"
     @register="registerModal"
-    :title="title"
+    :title="getIdentity"
     :width="800"
     :min-height="600"
     @ok="handleSubmit"
+    @visible-change="handleVisibleChange"
   >
     <Row>
       <Col :span="24">
@@ -35,7 +36,6 @@
               <BasicTree
                 :checkable="true"
                 :checkStrictly="true"
-                :selectable="false"
                 :disabled="permissionTreeDisabled"
                 :treeData="permission.children"
                 :replaceFields="{
@@ -57,7 +57,7 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent, ref } from 'vue';
+  import { computed, defineComponent, ref } from 'vue';
   import { message } from 'ant-design-vue';
   import { Card, Checkbox, Col, Divider, Row, Tabs } from 'ant-design-vue';
   import { useLocalization } from '/@/hooks/abp/useLocalization';
@@ -70,6 +70,7 @@
     providerName: 'G',
     providerKey: '',
     readonly: false,
+    identity: '',
   };
 
   export default defineComponent({
@@ -104,14 +105,39 @@
       } = usePermissions({
         getPropsRef: model,
       });
-      const [registerModal, { closeModal, setModalProps }] = useModalInner((val) => {
+      const [registerModal, { closeModal, changeOkLoading }] = useModalInner((val) => {
         model.value = val;
       });
+      const getIdentity = computed(() => {
+        if (model.value.identity) {
+          return `${L('Permissions')} - ${model.value.identity}`;
+        }
+        return title.value;
+      })
+
+      function handleVisibleChange(visible: boolean) {
+        if (!visible) {
+          model.value.providerKey = '';
+        }
+      }
+
+      function handleSubmit() {
+        changeOkLoading(true);
+        handleSavePermission()
+          .then(() => {
+            message.success(L('Successful'));
+            closeModal();
+          })
+          .finally(() => {
+            changeOkLoading(false);
+          });
+      }
 
       return {
         L,
         activeKey,
         title,
+        getIdentity,
         permissionTab,
         permissionTree,
         permissionGrantKeys,
@@ -119,36 +145,12 @@
         permissionTreeCheckState,
         permissionTreeDisabled,
         handlePermissionGranted,
-        handleSavePermission,
         handleGrantAllPermission,
         handleGrantPermissions,
         registerModal,
-        closeModal,
-        setModalProps,
+        handleSubmit,
+        handleVisibleChange,
       };
-    },
-    methods: {
-      handleSubmit() {
-        this.setModalProps({
-          loading: true,
-          confirmLoading: true,
-          showCancelBtn: false,
-          closable: false,
-        });
-        this.handleSavePermission()
-          .then(() => {
-            message.success(this.L('Successful'));
-            this.closeModal();
-          })
-          .finally(() => {
-            this.setModalProps({
-              loading: false,
-              confirmLoading: false,
-              showCancelBtn: true,
-              closable: true,
-            });
-          });
-      },
     },
   });
 </script>

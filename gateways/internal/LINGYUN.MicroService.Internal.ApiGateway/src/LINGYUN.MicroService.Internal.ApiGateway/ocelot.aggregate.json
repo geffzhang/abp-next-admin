@@ -1,32 +1,35 @@
 {
   "Aggregates": [
-    // ¶¯Ì¬´úÀí¾ÛºÏ
+    // ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½Ûºï¿½
     {
       "RouteKeys": [
         "platform-api-definition",
         "backend-admin-api-definition",
         "messages-api-definition",
         "ids-admin-api-definition",
-        "localization-api-definition"
+        "localization-api-definition",
+        "task-api-definition",
+        "webhook-api-definition"
       ],
       "UpstreamPathTemplate": "/api/abp/api-definition",
       "Aggregator": "AbpResponseMergeAggregator",
       "Priority": 99
     },
-    // ¿ò¼ÜÅäÖÃ¾ÛºÏ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¾Ûºï¿½
     {
       "RouteKeys": [
         "platform-configuration",
         "backend-admin-configuration",
         "messages-configuration",
         "ids-admin-configuration",
-        "localization-configuration"
+        "localization-configuration",
+        "task-configuration"
       ],
       "UpstreamPathTemplate": "/api/abp/application-configuration",
       "Aggregator": "AbpResponseMergeAggregator",
       "Priority": 99
     },
-    // È«¾ÖÉèÖÃ
+    // È«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     {
       "RouteKeys": [
         "setting-global",
@@ -38,7 +41,7 @@
       "Aggregator": "AbpResponseMergeAggregator",
       "Priority": 99
     },
-    // ×â»§ÉèÖÃ
+    // ï¿½â»§ï¿½ï¿½ï¿½ï¿½
     {
       "RouteKeys": [
         "setting-current-tenant",
@@ -50,7 +53,7 @@
       "Aggregator": "AbpResponseMergeAggregator",
       "Priority": 99
     },
-    // ÓÃ»§¶©ÔÄ
+    // ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½
     {
       "RouteKeys": [
         "assignables-notifilers",

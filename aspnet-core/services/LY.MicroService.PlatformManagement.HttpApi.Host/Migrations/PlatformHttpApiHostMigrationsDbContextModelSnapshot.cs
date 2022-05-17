@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Volo.Abp.EntityFrameworkCore;
 
+#nullable disable
+
 namespace LY.MicroService.PlatformManagement.Migrations
 {
     [DbContext(typeof(PlatformManagementMigrationsDbContext))]
@@ -16,8 +18,8 @@ namespace LY.MicroService.PlatformManagement.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("_Abp_DatabaseProvider", EfCoreDatabaseProvider.MySql)
-                .HasAnnotation("Relational:MaxIdentifierLength", 64)
-                .HasAnnotation("ProductVersion", "5.0.11");
+                .HasAnnotation("ProductVersion", "6.0.2")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("LINGYUN.Platform.Datas.Data", b =>
                 {
@@ -102,7 +104,7 @@ namespace LY.MicroService.PlatformManagement.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("AppPlatformDatas");
+                    b.ToTable("AppPlatformDatas", (string)null);
                 });
 
             modelBuilder.Entity("LINGYUN.Platform.Datas.DataItem", b =>
@@ -197,7 +199,7 @@ namespace LY.MicroService.PlatformManagement.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("AppPlatformDataItems");
+                    b.ToTable("AppPlatformDataItems", (string)null);
                 });
 
             modelBuilder.Entity("LINGYUN.Platform.Layouts.Layout", b =>
@@ -286,7 +288,7 @@ namespace LY.MicroService.PlatformManagement.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AppPlatformLayouts");
+                    b.ToTable("AppPlatformLayouts", (string)null);
                 });
 
             modelBuilder.Entity("LINGYUN.Platform.Menus.Menu", b =>
@@ -393,7 +395,7 @@ namespace LY.MicroService.PlatformManagement.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AppPlatformMenus");
+                    b.ToTable("AppPlatformMenus", (string)null);
                 });
 
             modelBuilder.Entity("LINGYUN.Platform.Menus.RoleMenu", b =>
@@ -427,6 +429,9 @@ namespace LY.MicroService.PlatformManagement.Migrations
                         .HasColumnType("varchar(256)")
                         .HasColumnName("RoleName");
 
+                    b.Property<bool>("Startup")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("char(36)")
                         .HasColumnName("TenantId");
@@ -435,7 +440,7 @@ namespace LY.MicroService.PlatformManagement.Migrations
 
                     b.HasIndex("RoleName", "MenuId");
 
-                    b.ToTable("AppPlatformRoleMenus");
+                    b.ToTable("AppPlatformRoleMenus", (string)null);
                 });
 
             modelBuilder.Entity("LINGYUN.Platform.Menus.UserMenu", b =>
@@ -463,6 +468,9 @@ namespace LY.MicroService.PlatformManagement.Migrations
                     b.Property<Guid>("MenuId")
                         .HasColumnType("char(36)");
 
+                    b.Property<bool>("Startup")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("char(36)")
                         .HasColumnName("TenantId");
@@ -474,7 +482,7 @@ namespace LY.MicroService.PlatformManagement.Migrations
 
                     b.HasIndex("UserId", "MenuId");
 
-                    b.ToTable("AppPlatformUserMenus");
+                    b.ToTable("AppPlatformUserMenus", (string)null);
                 });
 
             modelBuilder.Entity("LINGYUN.Platform.Versions.AppVersion", b =>
@@ -554,7 +562,7 @@ namespace LY.MicroService.PlatformManagement.Migrations
 
                     b.HasIndex("Version");
 
-                    b.ToTable("AppPlatformVersion");
+                    b.ToTable("AppPlatformVersion", (string)null);
                 });
 
             modelBuilder.Entity("LINGYUN.Platform.Versions.VersionFile", b =>
@@ -625,7 +633,7 @@ namespace LY.MicroService.PlatformManagement.Migrations
                     b.HasIndex("Path", "Name", "Version")
                         .IsUnique();
 
-                    b.ToTable("AppPlatformVersionFile");
+                    b.ToTable("AppPlatformVersionFile", (string)null);
                 });
 
             modelBuilder.Entity("LINGYUN.Platform.Datas.DataItem", b =>

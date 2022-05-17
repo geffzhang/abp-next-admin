@@ -3,7 +3,9 @@ using LINGYUN.Abp.ExceptionHandling;
 using LINGYUN.Abp.ExceptionHandling.Emailing;
 using LINGYUN.Abp.Localization.CultureMap;
 using LINGYUN.Abp.Serilog.Enrichers.Application;
+using LINGYUN.Abp.Serilog.Enrichers.UniqueId;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Configuration;
@@ -11,16 +13,19 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
 using System;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Volo.Abp;
 using Volo.Abp.Auditing;
 using Volo.Abp.Caching;
 using Volo.Abp.EntityFrameworkCore;
+using Volo.Abp.GlobalFeatures;
 using Volo.Abp.Json;
 using Volo.Abp.Json.SystemTextJson;
 using Volo.Abp.Localization;
 using Volo.Abp.MultiTenancy;
+using Volo.Abp.Threading;
 using Volo.Abp.VirtualFileSystem;
 
 
@@ -28,9 +33,29 @@ namespace LY.MicroService.LocalizationManagement;
 
 public partial class LocalizationManagementHttpApiHostModule
 {
+    protected const string DefaultCorsPolicyName = "Default";
+
+    private static readonly OneTimeRunner OneTimeRunner = new OneTimeRunner();
+
+    private void PreConfigureFeature()
+    {
+        OneTimeRunner.Run(() =>
+        {
+            GlobalFeatureManager.Instance.Modules.Editions().EnableAll();
+        });
+    }
+
     private void PreConfigureApp()
     {
         AbpSerilogEnrichersConsts.ApplicationName = "Localization";
+
+        PreConfigure<AbpSerilogEnrichersUniqueIdOptions>(options =>
+        {
+            // 以开放端口区别
+            options.SnowflakeIdOptions.WorkerId = 30030;
+            options.SnowflakeIdOptions.WorkerIdBits = 5;
+            options.SnowflakeIdOptions.DatacenterId = 1;
+        });
     }
 
     private void PreConfigureCAP(IConfiguration configuration)
@@ -202,6 +227,30 @@ public partial class LocalizationManagementHttpApiHostModule
 
             options.CulturesMaps.Add(zhHansCultureMapInfo);
             options.UiCulturesMaps.Add(zhHansCultureMapInfo);
+        });
+    }
+
+    private void ConfigureCors(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddCors(options =>
+        {
+            options.AddPolicy(DefaultCorsPolicyName, builder =>
+            {
+                builder
+                    .WithOrigins(
+                        configuration["App:CorsOrigins"]
+                            .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                            .Select(o => o.RemovePostFix("/"))
+                            .ToArray()
+                    )
+                    .WithAbpExposedHeaders()
+                    // 引用 LINGYUN.Abp.AspNetCore.Mvc.Wrapper 包时可替换为 WithAbpWrapExposedHeaders
+                    .WithExposedHeaders("_AbpWrapResult", "_AbpDontWrapResult")
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
         });
     }
 

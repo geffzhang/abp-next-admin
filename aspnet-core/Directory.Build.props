@@ -1,16 +1,23 @@
 ﻿<Project>
 	<PropertyGroup>
-		<VoloAbpPackageVersion>5.0.0</VoloAbpPackageVersion>
-		<LINGYUNAbpPackageVersion>5.0.0</LINGYUNAbpPackageVersion>
-		<DaprPackageVersion>1.5.0</DaprPackageVersion>
+		<VoloAbpPackageVersion>5.2.1</VoloAbpPackageVersion>
+		<LINGYUNAbpPackageVersion>5.2.1</LINGYUNAbpPackageVersion>
+		<DaprPackageVersion>1.7.0</DaprPackageVersion>
 		<DistributedLockRedisPackageVersion>1.0.1</DistributedLockRedisPackageVersion>
-		<DotNetCoreCAPPackageVersion>5.2.0</DotNetCoreCAPPackageVersion>
+		<DotNetCoreCAPPackageVersion>6.0.1</DotNetCoreCAPPackageVersion>
 		<AliyunSDKPackageVersion>1.5.10</AliyunSDKPackageVersion>
 		<AliyunOSSSDKPackageVersion>2.13.0</AliyunOSSSDKPackageVersion>
+		<TencentCloudSDKPackageVersion>3.0.434</TencentCloudSDKPackageVersion>
 		<AgileConfigClientPackageVersion>1.2.1.5</AgileConfigClientPackageVersion>
 		<HangfireMySqlStoragePackageVersion>2.0.3</HangfireMySqlStoragePackageVersion>
-		<HangfireMSSQLStoragePackageVersion>1.7.27</HangfireMSSQLStoragePackageVersion>
+		<HangfireMSSQLStoragePackageVersion>1.7.28</HangfireMSSQLStoragePackageVersion>
 		<NESTPackageVersion>7.15.1</NESTPackageVersion>
+		<OpenTelemetryExtensionsHostingPackageVersion>1.0.0-rc8</OpenTelemetryExtensionsHostingPackageVersion>
+		<OpenTelemetryExporterZipkinPackageVersion>1.2.0-rc1</OpenTelemetryExporterZipkinPackageVersion>
+		<OpenTelemetryInstrumentationAspNetCorePackageVersion>1.0.0-rc8</OpenTelemetryInstrumentationAspNetCorePackageVersion>
+		<OpenTelemetryInstrumentationHttpPackageVersion>1.0.0-rc8</OpenTelemetryInstrumentationHttpPackageVersion>
+		<OpenTelemetryContribInstrumentationEntityFrameworkCorePackageVersion>1.0.0-beta2</OpenTelemetryContribInstrumentationEntityFrameworkCorePackageVersion>
+		<QuartzNETPackageVersion>3.3.3</QuartzNETPackageVersion>
 		<StackExchangeRedisPackageVersion>2.0.593</StackExchangeRedisPackageVersion>
 		<SerilogPackageVersion>2.10.0</SerilogPackageVersion>
 		<SerilogAspNetCorePackageVersion>4.1.0</SerilogAspNetCorePackageVersion>

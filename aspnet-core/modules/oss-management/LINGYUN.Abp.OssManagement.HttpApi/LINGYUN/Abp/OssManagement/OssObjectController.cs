@@ -26,7 +26,7 @@ namespace LINGYUN.Abp.OssManagement
         }
 
         [HttpPost]
-        public virtual async Task<OssObjectDto> CreateAsync(CreateOssObjectInput input)
+        public virtual async Task<OssObjectDto> CreateAsync([FromForm] CreateOssObjectInput input)
         {
             return await OssObjectAppService.CreateAsync(input);
         }
@@ -40,7 +40,7 @@ namespace LINGYUN.Abp.OssManagement
             await FileUploader.UploadAsync(input);
         }
 
-        [HttpDelete]
+        [HttpPost]
         [Route("bulk-delete")]
         public virtual async Task BulkDeleteAsync(BulkDeleteOssObjectInput input)
         {

@@ -2,6 +2,7 @@ import { defAbpHttp } from '/@/utils/http/abp';
 import {
   OssObject,
   OssObjectCreate,
+  OssObjectBulkDelete,
   OssContainer,
   GetOssObjectRequest,
   GetOssObjectPagedRequest,
@@ -17,6 +18,7 @@ import { UploadFileParams } from '/#/axios';
 enum Api {
   CreateObject = '/api/oss-management/objects',
   DeleteObject = '/api/oss-management/objects',
+  BulkDeleteObject = '/api/oss-management/objects/bulk-delete',
   GetObject = '/api/oss-management/objects',
   GetObjects = '/api/oss-management/containes/objects',
   CreateContainer = '/api/oss-management/containes/{name}',
@@ -81,6 +83,11 @@ export const uploadObject = (params: UploadFileParams, event: any) => {
         });
       }
       if (progress === totalSize) {
+        if (!res.data) {
+          res.data = {
+            url: format('/api/files/static/{bucket}/p/{path}/{name}', { bucket:  params.data?.bucket, path: params.data?.path, name: fileName }),
+          };
+        }
         resolve(res);
       }
     }
@@ -103,8 +110,8 @@ export const uploadObject = (params: UploadFileParams, event: any) => {
         currentChunkSize: currentChunksSize,
         totalChunks: totalChunks,
         totalSize: totalSize,
-        bucket: params.bucket,
-        path: params.path,
+        bucket: params.data?.bucket,
+        path: params.data?.path,
         fileName: fileName,
       };
       return defAbpHttp
@@ -160,10 +167,19 @@ export const getContainers = (input: GetOssContainerPagedRequest) => {
   });
 };
 
-export const createObject = (input: OssObjectCreate) => {
-  return defAbpHttp.post<OssObject>({
-    url: Api.CreateObject,
-    data: input,
+export const createObject = (input: OssObjectCreate, file?: Blob) => {
+  return defAbpHttp.request<OssObject>({
+    service: 'AbpOssManagement',
+    controller: 'OssObject',
+    action: 'CreateAsync',
+    data: {
+      Bucket: input.bucket,
+      Path: input.path,
+      FileName: input.object,
+      Overwrite: input.overwrite,
+      ExpirationTime: input.expirationTime,
+      File: file,
+    },
   });
 };
 
@@ -178,6 +194,13 @@ export const deleteObject = (input: GetOssObjectRequest) => {
     },
   );
 };
+
+export const bulkDeleteObject = (input: OssObjectBulkDelete) => {
+  return defAbpHttp.post<void>({
+    url: Api.BulkDeleteObject,
+    data: input,
+  });
+}
 
 export const getObject = (input: GetOssObjectRequest) => {
   return defAbpHttp.get<OssObject>({

@@ -1,18 +1,21 @@
-﻿using LINGYUN.Abp.AspNetCore.HttpOverrides;
+﻿using DotNetCore.CAP;
+using LINGYUN.Abp.AspNetCore.HttpOverrides;
 using LINGYUN.Abp.AuditLogging.Elasticsearch;
+using LINGYUN.Abp.Authorization.OrganizationUnits;
 using LINGYUN.Abp.Data.DbMigrator;
 using LINGYUN.Abp.EventBus.CAP;
 using LINGYUN.Abp.ExceptionHandling.Emailing;
 using LINGYUN.Abp.Features.LimitValidation.Redis;
 using LINGYUN.Abp.Localization.CultureMap;
 using LINGYUN.Abp.LocalizationManagement.EntityFrameworkCore;
-using LINGYUN.Abp.MultiTenancy.DbFinder;
 using LINGYUN.Abp.Notifications;
 using LINGYUN.Abp.OssManagement;
 using LINGYUN.Abp.OssManagement.FileSystem;
 using LINGYUN.Abp.OssManagement.FileSystem.ImageSharp;
 using LINGYUN.Abp.OssManagement.SettingManagement;
+using LINGYUN.Abp.Saas.EntityFrameworkCore;
 using LINGYUN.Abp.Serilog.Enrichers.Application;
+using LINGYUN.Abp.Serilog.Enrichers.UniqueId;
 using LINGYUN.Abp.UI.Navigation.VueVbenAdmin;
 using LINGYUN.Platform;
 using LINGYUN.Platform.EntityFrameworkCore;
@@ -34,46 +37,46 @@ using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
-using Volo.Abp.TenantManagement.EntityFrameworkCore;
 
 namespace LY.MicroService.PlatformManagement;
 
 [DependsOn(
-        typeof(AbpSerilogEnrichersApplicationModule),
-        typeof(AbpAspNetCoreSerilogModule),
-        typeof(AbpAuditLoggingElasticsearchModule),
-        typeof(AbpAspNetCoreMultiTenancyModule),
-        typeof(AbpUINavigationVueVbenAdminModule),
-        // typeof(AbpOssManagementAliyunModule),
-        typeof(AbpOssManagementFileSystemModule),           // 本地文件系统提供者模块
-        typeof(AbpOssManagementFileSystemImageSharpModule), // 本地文件系统图形处理模块
-        typeof(AbpOssManagementApplicationModule),
-        typeof(AbpOssManagementHttpApiModule),
-        typeof(AbpOssManagementSettingManagementModule),
-        typeof(PlatformApplicationModule),
-        typeof(PlatformHttpApiModule),
-        typeof(PlatformEntityFrameworkCoreModule),
-        typeof(AbpIdentityHttpApiClientModule),
-        typeof(AbpHttpClientIdentityModelWebModule),
-        typeof(AbpFeatureManagementEntityFrameworkCoreModule),
-        typeof(AbpTenantManagementEntityFrameworkCoreModule),
-        typeof(AbpSettingManagementEntityFrameworkCoreModule),
-        typeof(AbpPermissionManagementEntityFrameworkCoreModule),
-        typeof(AbpLocalizationManagementEntityFrameworkCoreModule),
-        typeof(AbpDataDbMigratorModule),
-        typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
-        typeof(AbpNotificationModule),
-        typeof(AbpEmailingExceptionHandlingModule),
-        typeof(AbpCAPEventBusModule),
-        typeof(AbpFeaturesValidationRedisModule),
-        // typeof(AbpFeaturesClientModule),// 当需要客户端特性限制时取消注释此模块
-        // typeof(AbpFeaturesValidationRedisClientModule),// 当需要客户端特性限制时取消注释此模块
-        typeof(AbpDbFinderMultiTenancyModule),
-        typeof(AbpCachingStackExchangeRedisModule),
-        typeof(AbpAspNetCoreHttpOverridesModule),
-        typeof(AbpLocalizationCultureMapModule),
-        typeof(AbpAutofacModule)
-        )]
+    typeof(AbpSerilogEnrichersApplicationModule),
+    typeof(AbpSerilogEnrichersUniqueIdModule),
+    typeof(AbpAspNetCoreSerilogModule),
+    typeof(AbpAuditLoggingElasticsearchModule),
+    typeof(AbpAspNetCoreMultiTenancyModule),
+    typeof(AbpUINavigationVueVbenAdminModule),
+    // typeof(AbpOssManagementAliyunModule),
+    typeof(AbpOssManagementFileSystemModule),           // 本地文件系统提供者模块
+    typeof(AbpOssManagementFileSystemImageSharpModule), // 本地文件系统图形处理模块
+    typeof(AbpOssManagementApplicationModule),
+    typeof(AbpOssManagementHttpApiModule),
+    typeof(AbpOssManagementSettingManagementModule),
+    typeof(PlatformApplicationModule),
+    typeof(PlatformHttpApiModule),
+    typeof(PlatformEntityFrameworkCoreModule),
+    typeof(AbpIdentityHttpApiClientModule),
+    typeof(AbpHttpClientIdentityModelWebModule),
+    typeof(AbpFeatureManagementEntityFrameworkCoreModule),
+    typeof(AbpSaasEntityFrameworkCoreModule),
+    typeof(AbpSettingManagementEntityFrameworkCoreModule),
+    typeof(AbpPermissionManagementEntityFrameworkCoreModule),
+    typeof(AbpLocalizationManagementEntityFrameworkCoreModule),
+    typeof(AbpDataDbMigratorModule),
+    typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
+    typeof(AbpAuthorizationOrganizationUnitsModule),
+    typeof(AbpNotificationModule),
+    typeof(AbpEmailingExceptionHandlingModule),
+    typeof(AbpCAPEventBusModule),
+    typeof(AbpFeaturesValidationRedisModule),
+    // typeof(AbpFeaturesClientModule),// 当需要客户端特性限制时取消注释此模块
+    // typeof(AbpFeaturesValidationRedisClientModule),// 当需要客户端特性限制时取消注释此模块
+    typeof(AbpCachingStackExchangeRedisModule),
+    typeof(AbpAspNetCoreHttpOverridesModule),
+    typeof(AbpLocalizationCultureMapModule),
+    typeof(AbpAutofacModule)
+    )]
 public partial class PlatformManagementHttpApiHostModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
@@ -81,25 +84,28 @@ public partial class PlatformManagementHttpApiHostModule : AbpModule
         var configuration = context.Services.GetConfiguration();
 
         PreConfigureApp();
+        PreConfigureFeature();
         PreConfigureCAP(configuration);
     }
 
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var hostingEnvironment = context.Services.GetHostingEnvironment();
-        var configuration = hostingEnvironment.BuildConfiguration();
+        var configuration = context.Services.GetConfiguration();
 
         ConfigureDbContext();
-        ConfigureJsonSerializer();
-        ConfigureKestrelServer();
         ConfigureBlobStoring();
+        ConfigureLocalization();
+        ConfigureKestrelServer();
+        ConfigureJsonSerializer();
         ConfigreExceptionHandling();
-        ConfigureCaching(configuration);
         ConfigureVirtualFileSystem();
-        ConfigureMultiTenancy(configuration);
+        ConfigureCaching(configuration);
         ConfigureAuditing(configuration);
         ConfigureSwagger(context.Services);
-        ConfigureLocalization();
+        ConfigureMultiTenancy(configuration);
+        ConfigureCors(context.Services, configuration);
+        ConfigureSeedWorker(context.Services, hostingEnvironment.IsDevelopment());
         ConfigureSecurity(context.Services, configuration, hostingEnvironment.IsDevelopment());
     }
 
@@ -111,8 +117,10 @@ public partial class PlatformManagementHttpApiHostModule : AbpModule
         app.UseCorrelationId();
         // 虚拟文件系统
         app.UseStaticFiles();
-        //路由
+        // 路由
         app.UseRouting();
+        // 跨域
+        app.UseCors(DefaultCorsPolicyName);
         // 认证
         app.UseAuthentication();
         // jwt
@@ -123,6 +131,8 @@ public partial class PlatformManagementHttpApiHostModule : AbpModule
         app.UseMapRequestLocalization();
         // 授权
         app.UseAuthorization();
+        // Cap Dashboard
+        app.UseCapDashboard();
         // Swagger
         app.UseSwagger();
         // Swagger可视化界面
@@ -136,7 +146,5 @@ public partial class PlatformManagementHttpApiHostModule : AbpModule
         app.UseAbpSerilogEnrichers();
         // 路由
         app.UseConfiguredEndpoints();
-
-        SeedData(context);
     }
 }

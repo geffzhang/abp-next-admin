@@ -1,4 +1,5 @@
-﻿using LINGYUN.Abp.RealTime;
+﻿using LINGYUN.Abp.IdGenerator;
+using LINGYUN.Abp.RealTime;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EventBus.Distributed;
+using Volo.Abp.Uow;
 
 namespace LINGYUN.Abp.Notifications
 {
@@ -26,19 +28,25 @@ namespace LINGYUN.Abp.Notifications
         /// </summary>
         public IDistributedEventBus DistributedEventBus { get; }
         /// <summary>
-        /// Reference to <see cref="IMessageIdGenerator"/>.
+        /// Reference to <see cref="IDistributedIdGenerator"/>.
         /// </summary>
-        protected ISnowflakeIdrGenerator SnowflakeIdGenerator { get; }
+        protected IDistributedIdGenerator DistributedIdGenerator { get; }
+        /// <summary>
+        /// Reference to <see cref="IUnitOfWorkManager"/>.
+        /// </summary>
+        protected IUnitOfWorkManager UnitOfWorkManager { get; }
 
         protected AbpNotificationOptions Options { get; }
         public NotificationSender(
            IDistributedEventBus distributedEventBus,
-           ISnowflakeIdrGenerator snowflakeIdrGenerator,
+           IDistributedIdGenerator distributedIdGenerator,
+           IUnitOfWorkManager unitOfWorkManager,
            IOptions<AbpNotificationOptions> options)
         {
             Options = options.Value;
             DistributedEventBus = distributedEventBus;
-            SnowflakeIdGenerator = snowflakeIdrGenerator;
+            DistributedIdGenerator = distributedIdGenerator;
+            UnitOfWorkManager = unitOfWorkManager;
             Logger = NullLogger<NotificationSender>.Instance;
         }
 
@@ -79,7 +87,7 @@ namespace LINGYUN.Abp.Notifications
         {
             var eto = new NotificationEto<NotificationData>(data)
             {
-                Id = SnowflakeIdGenerator.Create(),
+                Id = DistributedIdGenerator.Create(),
                 TenantId = tenantId,
                 Users = users?.ToList(),
                 Name = name,
@@ -87,7 +95,17 @@ namespace LINGYUN.Abp.Notifications
                 Severity = severity
             };
 
-            await DistributedEventBus.PublishAsync(eto);
+            if (UnitOfWorkManager.Current != null)
+            {
+                UnitOfWorkManager.Current.OnCompleted(async () =>
+                {
+                    await DistributedEventBus.PublishAsync(eto);
+                });
+            }
+            else
+            {
+                await DistributedEventBus.PublishAsync(eto);
+            }
 
             return eto.Id.ToString();
         }

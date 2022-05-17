@@ -11,9 +11,12 @@ namespace LINGYUN.Abp.UI.Navigation.VueVbenAdmin
             context.Add(GetManage());
             context.Add(GetSaas());
             context.Add(GetPlatform());
-            context.Add(GetApiGateway());
+            // TODO: 网关不再需要动态管理
+            // context.Add(GetApiGateway());
             context.Add(GetLocalization());
             context.Add(GetOssManagement());
+            context.Add(GetTaskManagement());
+            context.Add(GetWebhooksManagement());
         }
 
         private static NavigationDefinition GetDashboard()
@@ -210,6 +213,14 @@ namespace LINGYUN.Abp.UI.Navigation.VueVbenAdmin
                   component: "/saas/tenant/index",
                   description: "租户管理",
                   multiTenancySides: MultiTenancySides.Host));
+            saas.AddItem(
+              new ApplicationMenu(
+                  name: "Editions",
+                  displayName: "版本管理",
+                  url: "/saas/editions",
+                  component: "/saas/editions/index",
+                  description: "版本管理",
+                  multiTenancySides: MultiTenancySides.Host));
 
             return new NavigationDefinition(saas);
         }
@@ -221,7 +232,8 @@ namespace LINGYUN.Abp.UI.Navigation.VueVbenAdmin
                 displayName: "平台管理",
                 url: "/platform",
                 component: "",
-                description: "平台管理");
+                description: "平台管理",
+                icon: "ep:platform");
             platform.AddItem(
               new ApplicationMenu(
                   name: "DataDictionary",
@@ -359,6 +371,65 @@ namespace LINGYUN.Abp.UI.Navigation.VueVbenAdmin
                   description: "文件管理"));
 
             return new NavigationDefinition(oss);
+        }
+
+        private static NavigationDefinition GetTaskManagement()
+        {
+            var task = new ApplicationMenu(
+                name: "TaskManagement",
+                displayName: "任务调度平台",
+                url: "/task-management",
+                component: "",
+                description: "任务调度平台",
+                icon: "bi:list-task");
+            task.AddItem(
+              new ApplicationMenu(
+                  name: "BackgroundJobs",
+                  displayName: "任务管理",
+                  url: "/task-management/background-jobs",
+                  component: "/task-management/background-jobs/index",
+                  description: "任务管理"));
+            task.AddItem(
+              new ApplicationMenu(
+                  name: "BackgroundJobInfoDetail",
+                  displayName: "任务详情",
+                  url: "/task-management/background-jobs/:id",
+                  component: "/task-management/background-jobs/components/BackgroundJobInfoDetail",
+                  description: "任务详情")
+              .SetProperty("hideMenu", "true")
+              .SetProperty("hideTab", "true"));
+
+            return new NavigationDefinition(task);
+        }
+
+        private static NavigationDefinition GetWebhooksManagement()
+        {
+            var webhooks = new ApplicationMenu(
+                name: "WebHooks",
+                displayName: "WebHooks",
+                url: "/webhooks",
+                component: "",
+                description: "WebHooks",
+                icon: "ic:outline-webhook",
+                multiTenancySides: MultiTenancySides.Host);
+            webhooks.AddItem(
+              new ApplicationMenu(
+                  name: "Subscriptions",
+                  displayName: "管理订阅",
+                  url: "/webhooks/subscriptions",
+                  component: "/webhooks/subscriptions/index",
+                  description: "管理订阅",
+                  multiTenancySides: MultiTenancySides.Host));
+            webhooks.AddItem(
+              new ApplicationMenu(
+                  name: "SendAttempts",
+                  displayName: "管理记录",
+                  url: "/webhooks/send-attempts",
+                  component: "/webhooks/send-attempts/index",
+                  description: "管理记录",
+                  multiTenancySides: MultiTenancySides.Host));
+
+            return new NavigationDefinition(webhooks);
         }
     }
 }

@@ -293,9 +293,8 @@ namespace LINGYUN.Abp.OssManagement.FileSystem
             else
             {
                 var fileInfo = new FileInfo(filePath);
-                using (var fileStream = File.OpenRead(filePath))
-                {
-                    var ossObject = new OssObject(
+                var fileStream = File.OpenRead(filePath);
+                var ossObject = new OssObject(
                     fileInfo.Name,
                     objectPath,
                     request.MD5 ? fileStream.MD5() : "",
@@ -307,32 +306,29 @@ namespace LINGYUN.Abp.OssManagement.FileSystem
                     { "IsReadOnly",  fileInfo.IsReadOnly.ToString() },
                     { "LastAccessTime",  fileInfo.LastAccessTime.ToString("yyyy-MM-dd HH:mm:ss") }
                     })
-                    {
-                        FullName = fileInfo.FullName.Replace(Environment.ContentRootPath, "")
-                    };
+                {
+                    FullName = fileInfo.FullName.Replace(Environment.ContentRootPath, "")
+                };
 
-                    var memoryStream = new MemoryStream();
-                    await fileStream.CopyToAsync(memoryStream);
-                    ossObject.SetContent(memoryStream);
+                ossObject.SetContent(fileStream);
 
-                    if (!request.Process.IsNullOrWhiteSpace())
+                if (!request.Process.IsNullOrWhiteSpace())
+                {
+                    using var serviceScope = ServiceProvider.CreateScope();
+                    var context = new FileSystemOssObjectContext(request.Process, ossObject, serviceScope.ServiceProvider);
+                    foreach (var processer in Options.Processers)
                     {
-                        using var serviceScope = ServiceProvider.CreateScope();
-                        var context = new FileSystemOssObjectContext(request.Process, ossObject, serviceScope.ServiceProvider);
-                        foreach (var processer in Options.Processers)
+                        await processer.ProcessAsync(context);
+
+                        if (context.Handled)
                         {
-                            await processer.ProcessAsync(context);
-
-                            if (context.Handled)
-                            {
-                                ossObject.SetContent(context.Content);
-                                break;
-                            }
+                            ossObject.SetContent(context.Content);
+                            break;
                         }
                     }
-
-                    return ossObject;
                 }
+
+                return ossObject;
             }
         }
 
@@ -394,8 +390,9 @@ namespace LINGYUN.Abp.OssManagement.FileSystem
             }
             DirectoryHelper.CreateIfNotExists(filePath);
             // 目录也属于Oss对象,需要抽象的文件系统集合来存储
-            var fileSystemNames = Directory.GetFileSystemEntries(filePath);
-            int maxFilesCount = fileSystemNames.Length;
+            var fileSystemNames = string.Equals(request.Delimiter, "/")
+                    ? Directory.GetDirectories(filePath)
+                    : Directory.GetFileSystemEntries(filePath);
 
             // 排序所有文件与目录
             Array.Sort(fileSystemNames, delegate (string x, string y)

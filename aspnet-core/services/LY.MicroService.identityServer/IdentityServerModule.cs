@@ -1,15 +1,18 @@
-﻿using LINGYUN.Abp.AspNetCore.HttpOverrides;
+﻿using DotNetCore.CAP;
+using LINGYUN.Abp.AspNetCore.HttpOverrides;
 using LINGYUN.Abp.AuditLogging.Elasticsearch;
 using LINGYUN.Abp.Data.DbMigrator;
 using LINGYUN.Abp.EventBus.CAP;
 using LINGYUN.Abp.Identity.EntityFrameworkCore;
+using LINGYUN.Abp.Identity.OrganizaztionUnits;
 using LINGYUN.Abp.IdentityServer;
 using LINGYUN.Abp.IdentityServer.EntityFrameworkCore;
+using LINGYUN.Abp.IdentityServer.QQ;
 using LINGYUN.Abp.IdentityServer.WeChat;
 using LINGYUN.Abp.Localization.CultureMap;
-using LINGYUN.Abp.MultiTenancy.DbFinder;
-using LINGYUN.Abp.PermissionManagement.Identity;
+using LINGYUN.Abp.Saas.EntityFrameworkCore;
 using LINGYUN.Abp.Serilog.Enrichers.Application;
+using LINGYUN.Abp.Serilog.Enrichers.UniqueId;
 using LINGYUN.Abp.Sms.Aliyun;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -30,40 +33,42 @@ using Volo.Abp.Identity;
 using Volo.Abp.IdentityServer.Jwt;
 using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement.EntityFrameworkCore;
+using Volo.Abp.PermissionManagement.Identity;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
-using Volo.Abp.TenantManagement.EntityFrameworkCore;
 
 namespace LY.MicroService.IdentityServer;
 
 [DependsOn(
-        typeof(AbpSerilogEnrichersApplicationModule),
-        typeof(AbpAspNetCoreSerilogModule),
-        typeof(AbpAccountWebIdentityServerModule),
-        typeof(AbpAccountApplicationModule),
-        typeof(AbpAspNetCoreMvcUiBasicThemeModule),
-        typeof(AbpAutofacModule),
-        typeof(AbpCachingStackExchangeRedisModule),
-        typeof(AbpEntityFrameworkCoreMySQLModule),
-        typeof(AbpIdentityEntityFrameworkCoreModule),
-        typeof(AbpIdentityApplicationModule),
-        // typeof(AbpIdentityHttpApiModule),
-        typeof(AbpIdentityServerEntityFrameworkCoreModule),
-        typeof(AbpIdentityServerSmsValidatorModule),
-        typeof(AbpIdentityServerWeChatModule),
-        typeof(AbpPermissionManagementDomainIdentityModule),
-        typeof(AbpPermissionManagementEntityFrameworkCoreModule),
-        typeof(AbpSettingManagementEntityFrameworkCoreModule),
-        typeof(AbpFeatureManagementEntityFrameworkCoreModule),
-        typeof(AbpTenantManagementEntityFrameworkCoreModule),
-        typeof(AbpDataDbMigratorModule),
-        typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
-        typeof(AbpAuditLoggingElasticsearchModule), // 放在 AbpIdentity 模块之后,避免被覆盖
-        typeof(AbpAspNetCoreHttpOverridesModule),
-        typeof(AbpLocalizationCultureMapModule),
-        typeof(AbpDbFinderMultiTenancyModule),
-        typeof(AbpCAPEventBusModule),
-        typeof(AbpAliyunSmsModule)
-        )]
+    typeof(AbpSerilogEnrichersApplicationModule),
+    typeof(AbpSerilogEnrichersUniqueIdModule),
+    typeof(AbpAspNetCoreSerilogModule),
+    typeof(AbpAccountWebIdentityServerModule),
+    typeof(AbpAccountApplicationModule),
+    typeof(AbpAspNetCoreMvcUiBasicThemeModule),
+    typeof(AbpAutofacModule),
+    typeof(AbpCachingStackExchangeRedisModule),
+    typeof(AbpEntityFrameworkCoreMySQLModule),
+    typeof(AbpIdentityEntityFrameworkCoreModule),
+    typeof(AbpIdentityApplicationModule),
+    // typeof(AbpIdentityHttpApiModule),
+    typeof(AbpIdentityServerEntityFrameworkCoreModule),
+    typeof(AbpIdentityServerSmsValidatorModule),
+    typeof(AbpIdentityServerWeChatModule),
+    typeof(AbpIdentityServerQQModule),
+    typeof(AbpIdentityOrganizaztionUnitsModule),
+    typeof(AbpPermissionManagementDomainIdentityModule),
+    typeof(AbpPermissionManagementEntityFrameworkCoreModule),
+    typeof(AbpSettingManagementEntityFrameworkCoreModule),
+    typeof(AbpFeatureManagementEntityFrameworkCoreModule),
+    typeof(AbpSaasEntityFrameworkCoreModule),
+    typeof(AbpDataDbMigratorModule),
+    typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
+    typeof(AbpAuditLoggingElasticsearchModule), // 放在 AbpIdentity 模块之后,避免被覆盖
+    typeof(AbpAspNetCoreHttpOverridesModule),
+    typeof(AbpLocalizationCultureMapModule),
+    typeof(AbpCAPEventBusModule),
+    typeof(AbpAliyunSmsModule)
+    )]
 public partial class IdentityServerModule : AbpModule
 {
     private const string DefaultCorsPolicyName = "Default";
@@ -74,6 +79,7 @@ public partial class IdentityServerModule : AbpModule
         var hostingEnvironment = context.Services.GetHostingEnvironment();
 
         PreConfigureApp();
+        PreConfigureFeature();
         PreConfigureCAP(configuration);
         PreConfigureCertificate(configuration, hostingEnvironment);
     }
@@ -81,7 +87,7 @@ public partial class IdentityServerModule : AbpModule
     public override void ConfigureServices(ServiceConfigurationContext context)
     {
         var hostingEnvironment = context.Services.GetHostingEnvironment();
-        var configuration = hostingEnvironment.BuildConfiguration();
+        var configuration = context.Services.GetConfiguration();
 
         ConfigureDbContext();
         ConfigureJsonSerializer();
@@ -94,6 +100,7 @@ public partial class IdentityServerModule : AbpModule
         ConfigureUrls(configuration);
         ConfigureMultiTenancy(configuration);
         ConfigureCors(context.Services, configuration);
+        ConfigureSeedWorker(context.Services, hostingEnvironment.IsDevelopment());
         ConfigureSecurity(context.Services, configuration, hostingEnvironment.IsDevelopment());
     }
 
@@ -125,10 +132,9 @@ public partial class IdentityServerModule : AbpModule
         app.UseMapRequestLocalization();
         app.UseIdentityServer();
         app.UseAuthorization();
+        app.UseCapDashboard();
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
-
-        SeedData(context);
     }
 }

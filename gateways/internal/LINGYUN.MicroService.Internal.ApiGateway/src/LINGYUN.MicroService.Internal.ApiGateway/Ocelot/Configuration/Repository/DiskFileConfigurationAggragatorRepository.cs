@@ -35,7 +35,7 @@ namespace LINGYUN.MicroService.Internal.ApiGateway.Ocelot.Configuration.Reposito
             _environmentFilePath = Path.Combine(
                 _hostEnvironment.ContentRootPath, 
                 $"ocelot.{hostingEnvironment.EnvironmentName ?? "Development"}.json");
-            _ocelotFiles = new string[7] 
+            _ocelotFiles = new string[9] 
             {
                 "ocelot.global.json",
                 "ocelot.backendadmin.json",
@@ -43,7 +43,9 @@ namespace LINGYUN.MicroService.Internal.ApiGateway.Ocelot.Configuration.Reposito
                 "ocelot.localization.json",
                 "ocelot.messages.json",
                 "ocelot.platform.json",
-                "ocelot.aggregate.json"
+                "ocelot.aggregate.json",
+                "ocelot.task.json",
+                "ocelot.webhook.json"
             };
         }
 

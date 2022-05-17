@@ -13,8 +13,4 @@
 		<PackageReference Include="Volo.Abp.AspNetCore" Version="$(VoloAbpPackageVersion)" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\..\common\LINGYUN.Abp.Wrapper\LINGYUN.Abp.Wrapper.csproj" />
-	</ItemGroup>
-
 </Project>

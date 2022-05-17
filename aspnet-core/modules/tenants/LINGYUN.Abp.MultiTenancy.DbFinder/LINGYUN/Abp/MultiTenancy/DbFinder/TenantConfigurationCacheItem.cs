@@ -1,10 +1,14 @@
 ﻿using System;
 using Volo.Abp.Data;
+using Volo.Abp.MultiTenancy;
 
 namespace LINGYUN.Abp.MultiTenancy.DbFinder
 {
+    [Serializable]
+    [IgnoreMultiTenancy]
     public class TenantConfigurationCacheItem
     {
+        protected const string FormatKey = "pn:{0},k:{1}";
         public Guid Id { get; set; }
         public string Name { get; set; }
         // TODO: 是否需要加密存储?
@@ -20,7 +24,7 @@ namespace LINGYUN.Abp.MultiTenancy.DbFinder
         }
         public static string CalculateCacheKey(string key)
         {
-            return "p:tenant" + ",k:" + key;
+            return string.Format(FormatKey, "tenant", key);
         }
     }
 }

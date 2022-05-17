@@ -190,35 +190,24 @@ public class IdentityServerDataSeedContributor : IDataSeedContributor, ITransien
             );
         }
 
-        //Console Test Client
-        var consoleClientId = configurationSection["AuthVueAdmin:ClientId"];
-        if (!consoleClientId.IsNullOrWhiteSpace())
+        var vueClientId = configurationSection["AuthVueAdmin:ClientId"];
+        if (!vueClientId.IsNullOrWhiteSpace())
         {
             await CreateClientAsync(
-                consoleClientId,
+                vueClientId,
                 commonScopes.Union(new[] { "lingyun-abp-application" }),
                 new[] { "password", "client_credentials" },
                 commonSecret
             );
         }
-
-        //ApiGateway
-        var apigatewayClientId = configurationSection["AuthApiGateway:ClientId"];
-        if (!apigatewayClientId.IsNullOrWhiteSpace())
+        var vueOldClientId = configurationSection["AuthOldVueAdmin:ClientId"];
+        if (!vueOldClientId.IsNullOrWhiteSpace())
         {
-            var apigatewayPermissions = new string[8]
-            {
-                    "ApiGateway.Global", "ApiGateway.Global.Export",
-                    "ApiGateway.Route", "ApiGateway.Route.Export",
-                    "ApiGateway.DynamicRoute", "ApiGateway.DynamicRoute.Export",
-                    "ApiGateway.AggregateRoute", "ApiGateway.AggregateRoute.Export",
-            };
             await CreateClientAsync(
-                apigatewayClientId,
+                vueOldClientId,
                 commonScopes.Union(new[] { "lingyun-abp-application" }),
-                new[] { "client_credentials" },
-                commonSecret,
-                permissions: apigatewayPermissions
+                new[] { "password", "client_credentials" },
+                commonSecret
             );
         }
 

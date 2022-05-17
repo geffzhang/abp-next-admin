@@ -16,8 +16,6 @@ namespace LINGYUN.Abp.Dapr.Actors
 
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            var configuration = context.Services.GetConfiguration();
-            Configure<AbpDaprRemoteServiceOptions>(configuration);
             context.Services.AddHttpClient(DaprHttpClient);
         }
     }

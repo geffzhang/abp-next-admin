@@ -1,13 +1,16 @@
-﻿using LINGYUN.Abp.AspNetCore.HttpOverrides;
+﻿using DotNetCore.CAP;
+using LINGYUN.Abp.AspNetCore.HttpOverrides;
 using LINGYUN.Abp.AuditLogging.Elasticsearch;
+using LINGYUN.Abp.Authorization.OrganizationUnits;
 using LINGYUN.Abp.Data.DbMigrator;
 using LINGYUN.Abp.EventBus.CAP;
 using LINGYUN.Abp.ExceptionHandling.Emailing;
 using LINGYUN.Abp.Localization.CultureMap;
 using LINGYUN.Abp.LocalizationManagement;
 using LINGYUN.Abp.LocalizationManagement.EntityFrameworkCore;
-using LINGYUN.Abp.MultiTenancy.DbFinder;
+using LINGYUN.Abp.Saas.EntityFrameworkCore;
 using LINGYUN.Abp.Serilog.Enrichers.Application;
+using LINGYUN.Abp.Serilog.Enrichers.UniqueId;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,12 +24,12 @@ using Volo.Abp.EntityFrameworkCore.MySQL;
 using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
-using Volo.Abp.TenantManagement.EntityFrameworkCore;
 
 namespace LY.MicroService.LocalizationManagement
 {
     [DependsOn(
         typeof(AbpSerilogEnrichersApplicationModule),
+        typeof(AbpSerilogEnrichersUniqueIdModule),
         typeof(AbpAspNetCoreSerilogModule),
         typeof(AbpAuditLoggingElasticsearchModule),
         typeof(AbpAspNetCoreMultiTenancyModule),
@@ -34,14 +37,14 @@ namespace LY.MicroService.LocalizationManagement
         typeof(AbpLocalizationManagementHttpApiModule),
         typeof(AbpLocalizationManagementEntityFrameworkCoreModule),
         typeof(AbpEntityFrameworkCoreMySQLModule),
-        typeof(AbpTenantManagementEntityFrameworkCoreModule),
+        typeof(AbpSaasEntityFrameworkCoreModule),
         typeof(AbpSettingManagementEntityFrameworkCoreModule),
         typeof(AbpPermissionManagementEntityFrameworkCoreModule),
         typeof(AbpDataDbMigratorModule),
         typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
+        typeof(AbpAuthorizationOrganizationUnitsModule),
         typeof(AbpEmailingExceptionHandlingModule),
         typeof(AbpCAPEventBusModule),
-        typeof(AbpDbFinderMultiTenancyModule),
         typeof(AbpCachingStackExchangeRedisModule),
         typeof(AbpAspNetCoreHttpOverridesModule),
         typeof(AbpLocalizationCultureMapModule),
@@ -54,6 +57,7 @@ namespace LY.MicroService.LocalizationManagement
             var configuration = context.Services.GetConfiguration();
 
             PreConfigureApp();
+            PreConfigureFeature();
             PreConfigureCAP(configuration);
         }
 
@@ -63,14 +67,16 @@ namespace LY.MicroService.LocalizationManagement
             var configuration = context.Services.GetConfiguration();
 
             ConfigureDbContext();
+            ConfigureLocalization();
             ConfigureJsonSerializer();
             ConfigreExceptionHandling();
-            ConfigureAuditing(configuration);
-            ConfigureCaching(configuration);
             ConfigureVirtualFileSystem();
-            ConfigureMultiTenancy(configuration);
-            ConfigureLocalization();
+            ConfigureCaching(configuration);
+            ConfigureAuditing(configuration);
             ConfigureSwagger(context.Services);
+            ConfigureMultiTenancy(configuration);
+            ConfigureCors(context.Services, configuration);
+            ConfigureSeedWorker(context.Services, hostingEnvironment.IsDevelopment());
             ConfigureSecurity(context.Services, configuration, hostingEnvironment.IsDevelopment());
         }
 
@@ -83,8 +89,10 @@ namespace LY.MicroService.LocalizationManagement
             app.UseCorrelationId();
             // 虚拟文件系统
             app.UseStaticFiles();
-            //路由
+            // 路由
             app.UseRouting();
+            // 跨域
+            app.UseCors(DefaultCorsPolicyName);
             // 认证
             app.UseAuthentication();
             // jwt
@@ -93,6 +101,8 @@ namespace LY.MicroService.LocalizationManagement
             app.UseMapRequestLocalization();
             // 授权
             app.UseAuthorization();
+            // Cap Dashboard
+            app.UseCapDashboard();
             // Swagger
             app.UseSwagger();
             // Swagger可视化界面
@@ -105,8 +115,6 @@ namespace LY.MicroService.LocalizationManagement
             app.UseAbpSerilogEnrichers();
             // 路由
             app.UseConfiguredEndpoints();
-
-            SeedData(context);
         }
     }
 }

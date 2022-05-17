@@ -3,8 +3,9 @@ using LINGYUN.Abp.BlobStoring.OssManagement;
 using LINGYUN.Abp.Data.DbMigrator;
 using LINGYUN.Abp.ExceptionHandling.Emailing;
 using LINGYUN.Abp.LocalizationManagement.EntityFrameworkCore;
-using LINGYUN.Abp.MultiTenancy.DbFinder;
+using LINGYUN.Abp.Saas.EntityFrameworkCore;
 using LINGYUN.Abp.Serilog.Enrichers.Application;
+using LINGYUN.Abp.Serilog.Enrichers.UniqueId;
 using LINGYUN.Abp.WorkflowCore.Components;
 using LINGYUN.Abp.WorkflowCore.DistributedLock;
 using LINGYUN.Abp.WorkflowCore.LifeCycleEvent;
@@ -16,7 +17,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Globalization;
 using Volo.Abp;
 using Volo.Abp.AspNetCore.Authentication.JwtBearer;
 using Volo.Abp.AspNetCore.MultiTenancy;
@@ -32,46 +32,46 @@ using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
 using Volo.Abp.Swashbuckle;
-using Volo.Abp.TenantManagement.EntityFrameworkCore;
 
 namespace LY.MicroService.WorkflowManagement;
 
 [DependsOn(
-        typeof(AbpSerilogEnrichersApplicationModule),
-        typeof(AbpAuditLoggingElasticsearchModule),
-        typeof(AbpAspNetCoreSerilogModule),
-        typeof(AbpEventBusRabbitMqModule),
-        typeof(AbpBlobStoringOssManagementModule),
-        typeof(WorkflowManagementApplicationModule),
-        typeof(WorkflowManagementHttpApiModule),
-        typeof(WorkflowManagementEntityFrameworkCoreModule),
-        typeof(AbpWorkflowCoreComponentsModule),
-        typeof(AbpWorkflowCoreDistributedLockModule),
-        typeof(AbpWorkflowCoreLifeCycleEventModule),
-        typeof(AbpWorkflowCoreRabbitMQModule),
-        typeof(AbpWorkflowCorePersistenceEntityFrameworkCoreModule),
-        typeof(AbpEntityFrameworkCoreMySQLModule),
-        typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
-        typeof(AbpEmailingExceptionHandlingModule),
-        typeof(AbpHttpClientIdentityModelWebModule),
-        typeof(AbpAspNetCoreMultiTenancyModule),
-        typeof(AbpDbFinderMultiTenancyModule),
-        typeof(AbpFeatureManagementEntityFrameworkCoreModule),
-        typeof(AbpPermissionManagementEntityFrameworkCoreModule),
-        typeof(AbpSettingManagementEntityFrameworkCoreModule),
-        typeof(AbpTenantManagementEntityFrameworkCoreModule),
-        typeof(AbpLocalizationManagementEntityFrameworkCoreModule),
-        typeof(AbpDataDbMigratorModule),
-        typeof(AbpCachingStackExchangeRedisModule),
-        typeof(AbpAspNetCoreMvcModule),
-        typeof(AbpSwashbuckleModule),
-        typeof(AbpAutofacModule)
-        )]
+    typeof(AbpSerilogEnrichersApplicationModule),
+    typeof(AbpSerilogEnrichersUniqueIdModule),
+    typeof(AbpAuditLoggingElasticsearchModule),
+    typeof(AbpAspNetCoreSerilogModule),
+    typeof(AbpEventBusRabbitMqModule),
+    typeof(AbpBlobStoringOssManagementModule),
+    typeof(WorkflowManagementApplicationModule),
+    typeof(WorkflowManagementHttpApiModule),
+    typeof(WorkflowManagementEntityFrameworkCoreModule),
+    typeof(AbpWorkflowCoreComponentsModule),
+    typeof(AbpWorkflowCoreDistributedLockModule),
+    typeof(AbpWorkflowCoreLifeCycleEventModule),
+    typeof(AbpWorkflowCoreRabbitMQModule),
+    typeof(AbpWorkflowCorePersistenceEntityFrameworkCoreModule),
+    typeof(AbpEntityFrameworkCoreMySQLModule),
+    typeof(AbpAspNetCoreAuthenticationJwtBearerModule),
+    typeof(AbpEmailingExceptionHandlingModule),
+    typeof(AbpHttpClientIdentityModelWebModule),
+    typeof(AbpAspNetCoreMultiTenancyModule),
+    typeof(AbpFeatureManagementEntityFrameworkCoreModule),
+    typeof(AbpPermissionManagementEntityFrameworkCoreModule),
+    typeof(AbpSettingManagementEntityFrameworkCoreModule),
+    typeof(AbpSaasEntityFrameworkCoreModule),
+    typeof(AbpLocalizationManagementEntityFrameworkCoreModule),
+    typeof(AbpDataDbMigratorModule),
+    typeof(AbpCachingStackExchangeRedisModule),
+    typeof(AbpAspNetCoreMvcModule),
+    typeof(AbpSwashbuckleModule),
+    typeof(AbpAutofacModule)
+    )]
 public partial class WorkflowManagementHttpApiHostModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
     {
         PreConfigureApp();
+        PreConfigureFeature();
     }
 
     public override void ConfigureServices(ServiceConfigurationContext context)
@@ -90,6 +90,7 @@ public partial class WorkflowManagementHttpApiHostModule : AbpModule
         ConfigureSwagger(context.Services);
         ConfigureBlobStoring(context.Services, configuration);
         ConfigureDistributedLock(context.Services, configuration);
+        ConfigureSeedWorker(context.Services, hostingEnvironment.IsDevelopment());
         ConfigureSecurity(context.Services, configuration, hostingEnvironment.IsDevelopment());
 
         // 开发取消权限检查
@@ -108,7 +109,7 @@ public partial class WorkflowManagementHttpApiHostModule : AbpModule
         app.UseAuthentication();
         app.UseJwtTokenMiddleware();
         app.UseMultiTenancy();
-        app.UseAbpRequestLocalization(options => options.SetDefaultCulture(CultureInfo.CurrentCulture.Name));
+        app.UseAbpRequestLocalization();
         app.UseAuthorization();
         app.UseSwagger();
         app.UseAbpSwaggerUI(options =>
@@ -123,7 +124,5 @@ public partial class WorkflowManagementHttpApiHostModule : AbpModule
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
         app.UseConfiguredEndpoints();
-
-        SeedData(context);
     }
 }
